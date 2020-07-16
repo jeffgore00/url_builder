@@ -1,26 +1,27 @@
+import java.net.MalformedURLException
+import java.net.URL
+
 fun main(args: Array<String>) {
-    var url = arrayListOf<String>("https://www.americanexpress.com/", "en-us", "/loans/apply/personal-loan, business-loan?pcn=hello;login=simple,card")
-
-    val joinedArgs = url.joinToString(separator = "")
-    var (baseWithoutQuery, queryPortion) = joinedArgs.split( "?")
-
+//    var args = listOf("jeffttp:, https://www.americanexpress.com/", "en-us", "/loans/apply /personal-loan, business-loan?pcn=hello;login=simple,card")
+    val joinedArgs = args.joinToString(separator = "")
+    val (baseWithoutQuery, queryPortion) = joinedArgs.split( "?")
     //
     // PART 1. HANDLE THE BASE WITHOUT QUERY
     //
     val urlSegments = baseWithoutQuery.split("/")
-    var optionsBySegment = mutableListOf<List<String>>()
+    val optionsBySegment = mutableListOf<List<String>>()
 
     for (segment in urlSegments) {
         val segmentOptions = segment.split(",").map{ it.trim() }
         optionsBySegment.add(segmentOptions)
     }
 
-    var finalCollection = mutableListOf<String>("")
+    val finalCollection = mutableListOf<String>("")
     for ((segmentIndex, optionsForSegment) in optionsBySegment.withIndex()) {
-        var prefix = if (segmentIndex == 0) "" else "/"
+        val prefix = if (segmentIndex == 0) "" else "/"
 
         // Since we
-        var tempCollection = finalCollection.toMutableList()
+        val tempCollection = finalCollection.toMutableList()
         for ((optionIndex, option) in optionsForSegment.withIndex()) {
 
             // If this is the first option in the list, then just append to all the URLs in the collection.
@@ -35,27 +36,45 @@ fun main(args: Array<String>) {
             }
         }
     }
-
     //
     // PART 2. HANDLE THE QUERY STRINGS
     //
-    var queryStrings = queryPortion.split(";").toMutableList()
+    val queryStrings = queryPortion.split(";").toMutableList()
     queryStrings.sort()
     for (queryString in queryStrings) {
-        var tempCollection = finalCollection.toMutableList()
+        val tempCollection = finalCollection.toMutableList()
 
         for ((i) in tempCollection.withIndex()) {
-            var (queryKey, queryValueString) = queryString.split("=")
-            var queryValues = queryValueString.split(",")
+            val (queryKey, queryValueString) = queryString.split("=")
+            val queryValues = queryValueString.split(",")
             for (queryValue in queryValues) {
-                var prefix = if (tempCollection[i].contains("?")) "&" else "?"
+                val prefix = if (tempCollection[i].contains("?")) "&" else "?"
                 finalCollection.add(tempCollection[i] + "$prefix$queryKey=$queryValue")
             }
         }
     }
 
-    finalCollection.sort()
+    data class MalformedURL(val url: String, val errReason: String?)
+    val invalidUrls = mutableListOf<MalformedURL>()
 
-//    Patterns.WEB_URL.matcher(potentialUrl).matches()
+    finalCollection.forEach{ url ->
+        try {
+            URL(url)
+        } catch (err: MalformedURLException) {
+            invalidUrls.add(MalformedURL(url, err.message))
+        }
+    }
+    invalidUrls.forEach{ urlObj -> finalCollection.remove(urlObj.url) }
+
+    finalCollection.sort()
+    println("VALID URL LIST (${finalCollection.size} URLs):")
+    println("-----------------------------------")
     println(finalCollection.joinToString(separator = "\n"))
+
+    if (invalidUrls.size > 0) {
+        val invalidUrlStrings = invalidUrls.map{ urlObj -> "${urlObj.url} (${urlObj.errReason})"}
+        println("\nINVALID URL LIST (${invalidUrls.size} URLs):")
+        println("-----------------------------------")
+        println(invalidUrlStrings.joinToString(separator = "\n"))
+    }
 }

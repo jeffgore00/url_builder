@@ -2,3 +2,4 @@ out
 .idea
 *.jar
 *.iml
+.DS_Store
